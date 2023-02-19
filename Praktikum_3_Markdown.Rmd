@@ -1,0 +1,267 @@
+---
+title: "Praktikum 3"
+author: "Nevio Roccia"
+date: "12 5 2022"
+output: html_document
+---
+```{r}
+library(rvest)
+library(stringr)
+library(data.table)
+library(dplyr)
+```
+
+```{r}
+links <- read_html(x = "https://fis.fda.gov/extensions/FPD-QDE-FAERS/FPD-QDE-FAERS.html") |>
+  html_elements("a") |>
+  html_attr("href")
+links1 <- links[str_which(links, "faers_ascii_20")]
+links2<-links[str_which(links, "aers_ascii_2012")]
+links2<-links2[-1]
+links1<- as.vector(links1)
+links2<- as.vector(links2)
+links<- c(links1,links2)
+
+```
+
+
+### Runterladen aller Ordner mit allen Daten
+```{r}
+for (link in links){
+  name <- str_extract(link, pattern = "\\d{4}(q|Q)\\d")
+  download.file(link, destfile = paste0("data_raw/zip/", name))
+  unzip(paste0("data_raw/zip/", name), exdir = paste0("data_raw/", name))
+}
+```
+
+
+### Holen der benötigten .txt Dateien aus allen Ordnern
+```{r}
+for(link in links){
+  name <- str_extract(link, pattern = "\\d{4}(q|Q)\\d")
+  readlist <- list.files(paste0("data_raw/", name), pattern = "(\\.TXT|\\.txt)$", recursive = TRUE) |> 
+    as.vector() |> 
+    str_subset(pattern = "(ascii|ASCII)")
+  new_dir <- paste0("data_raw/", name,"new")
+  new.folder <- dir.create(new_dir)
+  for(file in readlist){
+    file.copy(paste0("data_raw/", name,"/",file),paste0("data_raw/", name,"new"))
+  }
+}
+```
+
+
+```{r}
+folders <- list.files("data_raw/", pattern = "new$")
+folders<- folders[str_which(folders,pattern = '2019')]
+folders
+
+```
+
+### Einlesen aller DEMO txt files von den Jahren 2020-2021
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'DEMO')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_demo <- copy(data)
+saveRDS(data_demo,'data_demo.rds')
+
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'DRUG')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_drug <- copy(data)
+saveRDS(data_drug,'data_drug.rds')
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'INDI')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_indi <- copy(data)
+saveRDS(data_indi,'data_indi.rds')
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'OUTC')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_outc <- copy(data)
+saveRDS(data_outc,'data_outc.rds')
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'REAC')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_reac <- copy(data)
+saveRDS(data_reac,'data_reac.rds')
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'RPSR')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_rpsr <- copy(data)
+saveRDS(data_rpsr,'data_rpsr.rds')
+```
+
+```{r}
+data <- NULL
+for(folder in folders){
+  year<- str_sub(folder,1,4)
+  time<- str_sub(folder,5,6)
+  files <- list.files(paste0("data_raw/",folder))
+  file<- files[str_which(files,pattern = 'THER')]
+    file<-fread(paste0("data_raw/", folder, "/", file), quote = "", sep = "$", header = TRUE,data.table = TRUE)
+    file[, ":=" (year= year,quartal=time)]
+    data <- bind_rows(data,file)
+}
+data_ther <- copy(data)
+saveRDS(data_ther,'data_ther.rds')
+```
+
+#Erstellen eines Data Tables aus der Drug Tabelle mit den 12 häufigsten Medikamenten
+```{r}
+data_drug %>%
+  group_by(drugname) %>%
+  summarise(Meldungen = n()) %>%
+  slice_max(order_by = Meldungen, n = 15)%>%
+  as.data.frame() -> df
+View(df)
+data_drug |>
+  filter(
+    drugname == 'PROACTIV MD ADAPALENE ACNE TREATMENT' |
+      drugname == 'Proactiv MD Deep Cleansing Face Wash' |
+      drugname == 'HUMIRA' |
+      drugname == 'PROACTIV MD DAILY OIL CONTROL SPF 30' |
+      drugname == 'PREDNISONE.'|
+      drugname == 'REVLIMID' |
+      drugname == 'NEXIUM' |
+      drugname == 'METHOTREXATE.' |
+      drugname == 'PRILOSEC' |
+      drugname == 'LYRICA' |
+      drugname == 'PRILOSEC' |
+      drugname == 'OMEPRAZOLE.'
+  ) -> new_data_drug
+new_data_drug <- as.data.table(new_data_drug)
+```
+
+#Wählen der letzten Spalte in der data outcome Tabelle
+```{r}
+new_data_outc <- data_outc[, .SD[.N], by = "primaryid"]
+```
+
+#Mergen aller benötigten Tabellen zu einem  grossen Data Table
+```{r}
+new_data <-
+  merge(
+    x = new_data_drug,
+    y = data_demo ,
+    by = c("primaryid", 'year', 'quartal'),
+    all.x = TRUE
+  )
+new_data[ ,":="(caseid.y=NULL,caseid.x=NULL)]
+new_data <-
+  merge(
+    x = new_data,
+    y = new_data_outc,
+    by = c("primaryid", 'year', 'quartal'),
+    all.x = TRUE
+  )
+new_data[ ,":="(caseid.y=NULL,caseid.x=NULL)]
+new_data <-
+  merge(
+    x = new_data,
+    y = data_ther,
+    by.x = c('primaryid', 'drug_seq', 'year', 'quartal'),
+    by.y = c('primaryid', 'dsg_drug_seq', 'year', 'quartal'),
+    all.x = TRUE
+  )
+new_data[ ,":="(caseid.y=NULL,caseid.x=NULL)]
+new_data <- merge(
+  x = new_data, 
+  y = data_indi,
+  by.x = c('primaryid', 'drug_seq', 'year', 'quartal'),
+  by.y = c('primaryid', 'indi_drug_seq', 'year', 'quartal'), 
+  all.x = TRUE
+)
+new_data[ ,":="(caseid.y=NULL,caseid.x=NULL)]
+new_data <- merge(
+  x = new_data, 
+  y = data_reac,
+  by.x = c('primaryid', 'year', 'quartal', "indi_pt"),
+  by.y = c('primaryid', 'year', 'quartal', "pt"), 
+  all.x = TRUE
+)
+new_data[ ,":="(caseid.y=NULL,caseid.x=NULL)]
+```
+
+#Errechnen der Spalte zur Therapielaenge namens "Periode"
+```{r}
+new_data <- as.data.frame(new_data)
+new_data$end_dt<-as.Date(as.character(new_data$end_dt), format = "%Y%m%d")
+new_data$start_dt<-as.Date(as.character(new_data$start_dt), format = "%Y%m%d")
+new_data |>
+  mutate(periode=end_dt - start_dt)->new_data
+new_data['periode'][new_data['periode']==0]<-1
+```
+
+#Umbenennen einzelner Spalten
+```{r}
+new_data['drug_rec_act'][new_data['drug_rec_act']==""]<-"Keine Reaktion"
+names(new_data)[names(new_data) == "drug_rec_act"] <- "Reaktion"
+names(new_data)[names(new_data) == "indi_pt"] <- "Indikation"
+names(new_data)[names(new_data) == "drug_seq"] <- "Sequenz"
+names(new_data)[names(new_data) == "quartal"] <- "Quartal"
+```
+
+#Speichern von 'new_data'
+```{r}
+saveRDS(new_data, "new_data.rds")
+```
+
